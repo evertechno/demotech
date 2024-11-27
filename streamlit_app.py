@@ -1,7 +1,7 @@
 import os
 import tempfile
 import numpy as np
-from PIL import Image  # Pillow for image handling
+from PIL import Image
 from gtts import gTTS  # Google Text-to-Speech
 import streamlit as st
 import google.generativeai as genai
@@ -91,34 +91,45 @@ if st.button("Generate Sales Video"):
             # Provide a download link for the generated video
             st.video(output_video_file.name)
 
-        # Step 6: Generate PDF from the AI-generated content (for Sales Proposal)
-        if option == "Sales Proposal":
-            pdf = FPDF()
-            pdf.set_auto_page_break(auto=True, margin=15)
-            pdf.add_page()
+        # Step 6: Preprocess the text to replace unsupported characters (for PDF generation)
+        ai_content = ai_content.replace("\u2013", "-")  # Replace en dash with hyphen
+        ai_content = ai_content.replace("\u2014", "-")  # Replace em dash with hyphen
+        ai_content = ai_content.replace("\u2018", "'")  # Replace left single quotation mark
+        ai_content = ai_content.replace("\u2019", "'")  # Replace right single quotation mark
+        ai_content = ai_content.replace("\u201C", '"')  # Replace left double quotation mark
+        ai_content = ai_content.replace("\u201D", '"')  # Replace right double quotation mark
+        ai_content = ai_content.replace("\u2022", "*")  # Replace bullet point
 
-            # Title
-            pdf.set_font("Arial", "B", 16)
-            pdf.cell(200, 10, "Sales Proposal", ln=True, align="C")
+        # Step 7: Generate PDF from the AI-generated content (for Sales Proposal)
+        pdf = FPDF()
 
-            # Content
-            pdf.ln(10)
-            pdf.set_font("Arial", "", 12)
-            pdf.multi_cell(0, 10, ai_content)
+        # Add a page
+        pdf.add_page()
 
-            # Save the PDF to a file
-            output_pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
-            pdf.output(output_pdf_file.name)
+        # Set font (TrueType font for UTF-8 support)
+        pdf.add_font('Arial', '', 'path_to_arial.ttf', uni=True)  # Use Arial TTF font
+        pdf.set_font('Arial', '', 12)
 
-            # Provide a download link for the generated PDF
-            st.download_button(
-                label="Download Proposal as PDF",
-                data=open(output_pdf_file.name, "rb").read(),
-                file_name="sales_proposal.pdf",
-                mime="application/pdf",
-            )
+        # Add title
+        pdf.cell(200, 10, "Sales Proposal", ln=True, align="C")
 
-        # Step 7: Email Option (using mailto)
+        # Add content (AI-generated text)
+        pdf.ln(10)
+        pdf.multi_cell(0, 10, ai_content)
+
+        # Save the PDF to a file
+        output_pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+        pdf.output(output_pdf_file.name)
+
+        # Provide a download link for the generated PDF
+        st.download_button(
+            label="Download Proposal as PDF",
+            data=open(output_pdf_file.name, "rb").read(),
+            file_name="sales_proposal.pdf",
+            mime="application/pdf",
+        )
+
+        # Step 8: Email Option (using mailto)
         email_recipient = st.text_input("Enter recipient email address:")
         if email_recipient:
             email_body = f"Please find attached the generated {option}. You can download it here: [Download PDF](sandbox:/files/{output_pdf_file.name})"
