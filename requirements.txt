@@ -6,3 +6,4 @@ opencv-python-headless
 numpy
 moviepy
 PyPDF2
+fpdf
