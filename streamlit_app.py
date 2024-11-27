@@ -7,6 +7,7 @@ import streamlit as st
 import google.generativeai as genai
 from moviepy.editor import *  # MoviePy for video editing
 from PyPDF2 import PdfReader  # To read PDFs
+from fpdf import FPDF  # To generate PDF proposals
 
 # Configure the API key securely from Streamlit's secrets
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
@@ -23,6 +24,9 @@ pdf_file = st.file_uploader("Upload a Product Description PDF", type=["pdf"])
 
 # File uploader for images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
+
+# Editable text area for modifying proposal/demo content
+editable_content = st.text_area("Edit Generated Proposal/Demo Content", height=200)
 
 # Button to generate response and video
 if st.button("Generate Sales Video"):
@@ -42,6 +46,10 @@ if st.button("Generate Sales Video"):
             ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales demo for the following product: {text}").text
         else:  # Sales Proposal
             ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales proposal for the following product: {text}").text
+
+        # Allow user to modify the AI-generated content
+        if editable_content.strip() != "":
+            ai_content = editable_content
 
         # Step 3: Generate text-to-speech from AI content
         tts = gTTS(text=ai_content, lang='en')
@@ -82,6 +90,41 @@ if st.button("Generate Sales Video"):
 
             # Provide a download link for the generated video
             st.video(output_video_file.name)
+
+        # Step 6: Generate PDF from the AI-generated content (for Sales Proposal)
+        if option == "Sales Proposal":
+            pdf = FPDF()
+            pdf.set_auto_page_break(auto=True, margin=15)
+            pdf.add_page()
+
+            # Title
+            pdf.set_font("Arial", "B", 16)
+            pdf.cell(200, 10, "Sales Proposal", ln=True, align="C")
+
+            # Content
+            pdf.ln(10)
+            pdf.set_font("Arial", "", 12)
+            pdf.multi_cell(0, 10, ai_content)
+
+            # Save the PDF to a file
+            output_pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
+            pdf.output(output_pdf_file.name)
+
+            # Provide a download link for the generated PDF
+            st.download_button(
+                label="Download Proposal as PDF",
+                data=open(output_pdf_file.name, "rb").read(),
+                file_name="sales_proposal.pdf",
+                mime="application/pdf",
+            )
+
+        # Step 7: Email Option (using mailto)
+        email_recipient = st.text_input("Enter recipient email address:")
+        if email_recipient:
+            email_body = f"Please find attached the generated {option}. You can download it here: [Download PDF](sandbox:/files/{output_pdf_file.name})"
+            email_link = f"mailto:{email_recipient}?subject=Your {option} is ready&body={email_body}"
+
+            st.markdown(f"Click to send the proposal/demo by email: [Send Email]({email_link})")
 
     except Exception as e:
         st.error(f"Error: {e}")
