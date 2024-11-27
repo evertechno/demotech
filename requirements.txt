@@ -4,3 +4,4 @@ gtts
 pillow 
 opencv-python-headless
 numpy
+moviepy
