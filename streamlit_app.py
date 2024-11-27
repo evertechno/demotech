@@ -12,8 +12,11 @@ from PyPDF2 import PdfReader  # To read PDFs
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Streamlit App UI
-st.title("AI-Generated Sales Demo Video")
-st.write("Upload your images and PDF description to generate a sales demo video.")
+st.title("AI-Generated Sales Proposal/Demo Video")
+st.write("Upload your images and PDF description to generate a sales demo or proposal video.")
+
+# Option for selecting between sales demo or proposal
+option = st.selectbox("Select the type of content you want to generate:", ("Sales Demo", "Sales Proposal"))
 
 # File uploader for product description PDF
 pdf_file = st.file_uploader("Upload a Product Description PDF", type=["pdf"])
@@ -22,7 +25,7 @@ pdf_file = st.file_uploader("Upload a Product Description PDF", type=["pdf"])
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
 # Button to generate response and video
-if st.button("Generate Sales Demo Video"):
+if st.button("Generate Sales Video"):
     try:
         # Step 1: Process the PDF file to extract the product description text
         if pdf_file is not None:
@@ -34,9 +37,11 @@ if st.button("Generate Sales Demo Video"):
             # Fallback to a default description if no PDF is uploaded
             text = "Innovative AI software solution for businesses."
 
-        # Step 2: Generate AI content (sales demo) using Google Generative AI
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        ai_content = model.generate_content(text).text
+        # Step 2: Generate AI content (sales proposal or demo) based on user selection
+        if option == "Sales Demo":
+            ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales demo for the following product: {text}").text
+        else:  # Sales Proposal
+            ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales proposal for the following product: {text}").text
 
         # Step 3: Generate text-to-speech from AI content
         tts = gTTS(text=ai_content, lang='en')
