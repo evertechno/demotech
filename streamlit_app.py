@@ -6,7 +6,6 @@ from gtts import gTTS  # Google Text-to-Speech
 import streamlit as st
 import google.generativeai as genai
 from moviepy.editor import *  # MoviePy for video editing
-from PyPDF2 import PdfReader  # To read PDFs
 from fpdf import FPDF  # To generate PDF proposals
 
 # Configure the API key securely from Streamlit's secrets
@@ -14,42 +13,29 @@ genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 
 # Streamlit App UI
 st.title("AI-Generated Sales Proposal/Demo Video")
-st.write("Upload your images and PDF description to generate a sales demo or proposal video.")
+st.write("Provide some basic information about your product to generate a sales proposal and demo video.")
 
-# Option for selecting between sales demo or proposal
-option = st.selectbox("Select the type of content you want to generate:", ("Sales Demo", "Sales Proposal"))
+# Step 1: Get inputs from the user for the Sales Proposal
+product_name = st.text_input("Product Name", "AI-based Business Software")
+product_description = st.text_area("Product Description", "This product helps businesses automate their operations using AI.")
+target_audience = st.text_input("Target Audience", "Small and Medium Businesses (SMBs)")
+unique_features = st.text_area("Unique Features", "Automated reporting, AI-driven insights, Cloud-based platform.")
 
-# File uploader for product description PDF
-pdf_file = st.file_uploader("Upload a Product Description PDF", type=["pdf"])
-
-# File uploader for images (multiple files allowed)
+# File uploader for product images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-# Editable text area for modifying proposal/demo content
-editable_content = st.text_area("Edit Generated Proposal/Demo Content", height=200)
-
 # Button to generate response and video
-if st.button("Generate Sales Video"):
+if st.button("Generate Sales Proposal and Video"):
     try:
-        # Step 1: Process the PDF file to extract the product description text
-        if pdf_file is not None:
-            pdf_reader = PdfReader(pdf_file)
-            text = ""
-            for page in pdf_reader.pages:
-                text += page.extract_text()
-        else:
-            # Fallback to a default description if no PDF is uploaded
-            text = "Innovative AI software solution for businesses."
-
-        # Step 2: Generate AI content (sales proposal or demo) based on user selection
-        if option == "Sales Demo":
-            ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales demo for the following product: {text}").text
-        else:  # Sales Proposal
-            ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(f"Create a sales proposal for the following product: {text}").text
+        # Step 2: Generate AI content (sales proposal) based on user inputs
+        ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(
+            f"Create a sales proposal for a product called '{product_name}' that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}").text
 
         # Allow user to modify the AI-generated content
-        if editable_content.strip() != "":
-            ai_content = editable_content
+        editable_content = st.text_area("Edit Generated Proposal", ai_content, height=200)
+
+        # Use the editable content if modified
+        ai_content = editable_content.strip() if editable_content.strip() else ai_content
 
         # Step 3: Generate text-to-speech from AI content
         tts = gTTS(text=ai_content, lang='en')
@@ -132,10 +118,10 @@ if st.button("Generate Sales Video"):
         # Step 8: Email Option (using mailto)
         email_recipient = st.text_input("Enter recipient email address:")
         if email_recipient:
-            email_body = f"Please find attached the generated {option}. You can download it here: [Download PDF](sandbox:/files/{output_pdf_file.name})"
-            email_link = f"mailto:{email_recipient}?subject=Your {option} is ready&body={email_body}"
+            email_body = f"Please find attached the generated sales proposal. You can download it here: [Download PDF](sandbox:/files/{output_pdf_file.name})"
+            email_link = f"mailto:{email_recipient}?subject=Your Sales Proposal is ready&body={email_body}"
 
-            st.markdown(f"Click to send the proposal/demo by email: [Send Email]({email_link})")
+            st.markdown(f"Click to send the proposal by email: [Send Email]({email_link})")
 
     except Exception as e:
         st.error(f"Error: {e}")
