@@ -57,7 +57,13 @@ if st.button("Generate Sales Proposal and Video"):
                 img = Image.open(image_file)
                 img = img.resize((1280, 720))  # Resize to fit video dimensions
                 img_array = np.array(img)
-                height, width, _ = img_array.shape
+
+                # Check if the image is grayscale (2D) or color (3D)
+                if len(img_array.shape) == 2:  # Grayscale image (height, width)
+                    height, width = img_array.shape
+                    img_array = np.expand_dims(img_array, axis=-1)  # Add a color dimension (1 channel)
+                else:  # Color image (height, width, channels)
+                    height, width, _ = img_array.shape
 
                 # Create a video clip for each image
                 image_clip = ImageClip(img_array)
