@@ -38,7 +38,7 @@ image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "pn
 # Function to sanitize content by removing unwanted symbols
 def sanitize_text_for_tts(text):
     # Remove unwanted characters (e.g., asterisks, brackets, etc.)
-    sanitized_text = re.sub(r'[*\[\]\*\n]', ' ', text)
+    sanitized_text = re.sub(r'[*#\[\]\*\n]', ' ', text)
     # Optionally, remove extra spaces between words
     sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
     return sanitized_text
@@ -51,7 +51,11 @@ if st.button("Generate Sales Proposal and Video"):
 
         # Step 2: Generate AI content (sales proposal) based on user inputs
         ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(
-            f"Create a sales proposal for a product called '{product_name}' from {company_name} that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}. This presentation is being made for the target company {target_company}.").text
+            f"Create a clean and professional sales proposal for a product called '{product_name}' from {company_name}. "
+            f"The product helps '{target_audience}' with the following features: {unique_features}. "
+            f"The product description is: {product_description}. This proposal is being made for the target company {target_company}. "
+            f"Please avoid any special symbols, and ensure the text is suitable for a corporate presentation."
+        ).text
 
         # Add customer testimonials and call-to-action if provided
         if customer_testimonials:
