@@ -8,6 +8,7 @@ import google.generativeai as genai
 from moviepy.editor import *  # MoviePy for video editing
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas  # Built-in for PDF generation
+import time
 
 # Configure the API key securely from Streamlit's secrets
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
@@ -18,11 +19,17 @@ st.write("Provide some basic information about your product to generate a sales 
 
 # Step 1: Get inputs from the user for the Sales Proposal
 user_name = st.text_input("Your Name")
-company_name = st.text_input("Company Name")
+company_name = st.text_input("Your Company Name")
+target_company = st.text_input("Target Company Name (To whom the presentation is being created)")
 product_name = st.text_input("Product Name", "AI-based Business Software")
 product_description = st.text_area("Product Description", "This product helps businesses automate their operations using AI.")
 target_audience = st.text_input("Target Audience", "Small and Medium Businesses (SMBs)")
 unique_features = st.text_area("Unique Features", "Automated reporting, AI-driven insights, Cloud-based platform.")
+
+# New Inputs for Enhanced Customization
+customer_testimonials = st.text_area("Customer Testimonials (Optional)", "This product has helped us increase efficiency by 30%.")
+call_to_action = st.text_area("Call to Action", "Contact us today for a free demo!")
+video_duration_per_image = st.slider("Set Video Duration Per Image (seconds)", min_value=2, max_value=10, value=3)
 
 # File uploader for product images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
@@ -30,9 +37,19 @@ image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "pn
 # Button to generate response and video
 if st.button("Generate Sales Proposal and Video"):
     try:
+        # Start timer to measure performance
+        start_time = time.time()
+
         # Step 2: Generate AI content (sales proposal) based on user inputs
         ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(
-            f"Create a sales proposal for a product called '{product_name}' from {company_name} that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}").text
+            f"Create a sales proposal for a product called '{product_name}' from {company_name} that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}. This presentation is being made for the target company {target_company}.").text
+
+        # Add customer testimonials and call-to-action if provided
+        if customer_testimonials:
+            ai_content += f"\n\nCustomer Testimonials:\n{customer_testimonials}"
+
+        if call_to_action:
+            ai_content += f"\n\nCall to Action:\n{call_to_action}"
 
         # Allow user to modify the AI-generated content
         editable_content = st.text_area("Edit Generated Proposal", ai_content, height=200)
@@ -40,8 +57,8 @@ if st.button("Generate Sales Proposal and Video"):
         # Use the editable content if modified
         ai_content = editable_content.strip() if editable_content.strip() else ai_content
 
-        # Remove '**' characters from the AI-generated content
-        ai_content = ai_content.replace("**", "")
+        # Clean up any '**' characters from the generated content
+        ai_content = ai_content.replace("**", "").replace("]", "").replace("[", "")
 
         # Step 3: Generate text-to-speech from AI content
         tts = gTTS(text=ai_content, lang='en')
@@ -51,11 +68,9 @@ if st.button("Generate Sales Proposal and Video"):
         # Step 4: Create a video from uploaded images
         if image_files:
             image_clips = []
-            duration_per_image = 3  # Duration each image is shown in the video (seconds)
-
             for image_file in image_files:
                 img = Image.open(image_file)
-                img = img.resize((1280, 720))  # Resize to fit video dimensions
+                img = img.resize((640, 360))  # Resize to smaller size for faster processing
                 img_array = np.array(img)
 
                 # Check if the image is grayscale (2D) or color (3D)
@@ -67,7 +82,7 @@ if st.button("Generate Sales Proposal and Video"):
 
                 # Create a video clip for each image
                 image_clip = ImageClip(img_array)
-                image_clip = image_clip.set_duration(duration_per_image).set_fps(24)
+                image_clip = image_clip.set_duration(video_duration_per_image).set_fps(24)
                 image_clips.append(image_clip)
 
             # Combine image clips into a single video slideshow
@@ -122,6 +137,10 @@ if st.button("Generate Sales Proposal and Video"):
             email_link = f"mailto:{email_recipient}?subject=Your Sales Proposal is ready&body={email_body}"
 
             st.markdown(f"Click to send the proposal by email: [Send Email]({email_link})")
+
+        # Display total processing time for performance tracking
+        end_time = time.time()
+        st.write(f"Processing completed in {end_time - start_time:.2f} seconds.")
 
     except Exception as e:
         st.error(f"Error: {e}")
