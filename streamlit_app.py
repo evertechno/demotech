@@ -17,6 +17,8 @@ st.title("AI-Generated Sales Proposal/Demo Video")
 st.write("Provide some basic information about your product to generate a sales proposal and demo video.")
 
 # Step 1: Get inputs from the user for the Sales Proposal
+user_name = st.text_input("Your Name")
+company_name = st.text_input("Company Name")
 product_name = st.text_input("Product Name", "AI-based Business Software")
 product_description = st.text_area("Product Description", "This product helps businesses automate their operations using AI.")
 target_audience = st.text_input("Target Audience", "Small and Medium Businesses (SMBs)")
@@ -30,13 +32,16 @@ if st.button("Generate Sales Proposal and Video"):
     try:
         # Step 2: Generate AI content (sales proposal) based on user inputs
         ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(
-            f"Create a sales proposal for a product called '{product_name}' that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}").text
+            f"Create a sales proposal for a product called '{product_name}' from {company_name} that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}").text
 
         # Allow user to modify the AI-generated content
         editable_content = st.text_area("Edit Generated Proposal", ai_content, height=200)
 
         # Use the editable content if modified
         ai_content = editable_content.strip() if editable_content.strip() else ai_content
+
+        # Remove '**' characters from the AI-generated content
+        ai_content = ai_content.replace("**", "")
 
         # Step 3: Generate text-to-speech from AI content
         tts = gTTS(text=ai_content, lang='en')
@@ -76,7 +81,12 @@ if st.button("Generate Sales Proposal and Video"):
             video.write_videofile(output_video_file.name, codec="libx264", audio_codec="aac")
 
             # Provide a download link for the generated video
-            st.video(output_video_file.name)
+            st.download_button(
+                label="Download Sales Demo Video",
+                data=open(output_video_file.name, "rb").read(),
+                file_name="sales_demo_video.mp4",
+                mime="video/mp4",
+            )
 
         # Step 6: Generate PDF from the AI-generated content (for Sales Proposal)
         pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
