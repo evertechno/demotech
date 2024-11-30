@@ -32,26 +32,22 @@ customer_testimonials = st.text_area("Customer Testimonials (Optional)", "This p
 call_to_action = st.text_area("Call to Action", "Contact us today for a free demo!")
 video_duration_per_image = st.slider("Set Video Duration Per Image (seconds)", min_value=2, max_value=10, value=3)
 
+# Dynamic Pricing Options
+pricing_model = st.selectbox("Select Pricing Model", ["Standard", "Subscription-based", "Custom"])
+if pricing_model == "Custom":
+    pricing_details = st.text_area("Enter Custom Pricing Details", "Example: $100 for 10 users")
+else:
+    pricing_details = "Standard Pricing Model"
+
 # File uploader for product images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-# Function to sanitize content by removing unwanted symbols and Markdown formatting
+# Function to sanitize content by removing unwanted symbols
 def sanitize_text_for_tts(text):
-    # Remove Markdown-style bold (e.g., **bold**) and other formatting
-    sanitized_text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
-    sanitized_text = re.sub(r'\*(.*?)\*', r'\1', sanitized_text)  # Italics (if any)
-    sanitized_text = re.sub(r'#\s*(.*)', r'\1', sanitized_text)  # Headings (Remove #)
-    sanitized_text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', sanitized_text)  # Links (Keep link text only)
-
-    # Remove unwanted characters and symbols (e.g., *, #, \n, [], etc.)
-    sanitized_text = re.sub(r'[*#\[\]\*\n]', ' ', sanitized_text)
-    
-    # Keep alphanumeric characters, spaces, commas, periods, and hyphens
-    sanitized_text = re.sub(r'[^\w\s,.-]', '', sanitized_text)
-    
-    # Replace multiple spaces with a single space
+    # Remove unwanted characters (e.g., asterisks, brackets, etc.)
+    sanitized_text = re.sub(r'[*\[\]\*\n]', ' ', text)
+    # Optionally, remove extra spaces between words
     sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
-    
     return sanitized_text
 
 # Button to generate response and video
@@ -62,11 +58,7 @@ if st.button("Generate Sales Proposal and Video"):
 
         # Step 2: Generate AI content (sales proposal) based on user inputs
         ai_content = genai.GenerativeModel('gemini-1.5-flash').generate_content(
-            f"Create a clean and professional sales proposal for a product called '{product_name}' from {company_name}. "
-            f"The product helps '{target_audience}' with the following features: {unique_features}. "
-            f"The product description is: {product_description}. This proposal is being made for the target company {target_company}. "
-            f"Please avoid any special symbols, and ensure the text is suitable for a corporate presentation."
-        ).text
+            f"Create a sales proposal for a product called '{product_name}' from {company_name} that helps '{target_audience}' with the following features: {unique_features}. The product description is: {product_description}. This presentation is being made for the target company {target_company}.").text
 
         # Add customer testimonials and call-to-action if provided
         if customer_testimonials:
@@ -74,6 +66,9 @@ if st.button("Generate Sales Proposal and Video"):
 
         if call_to_action:
             ai_content += f"\n\nCall to Action:\n{call_to_action}"
+
+        # Add pricing model details
+        ai_content += f"\n\nPricing Model:\n{pricing_details}"
 
         # Sanitize the content to remove unwanted symbols
         ai_content_sanitized = sanitize_text_for_tts(ai_content)
