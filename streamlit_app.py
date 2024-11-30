@@ -35,14 +35,23 @@ video_duration_per_image = st.slider("Set Video Duration Per Image (seconds)", m
 # File uploader for product images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
-# Function to sanitize content by removing unwanted symbols
+# Function to sanitize content by removing unwanted symbols and Markdown formatting
 def sanitize_text_for_tts(text):
+    # Remove Markdown-style bold (e.g., **bold**) and other formatting
+    sanitized_text = re.sub(r'\*\*(.*?)\*\*', r'\1', text)  # Bold
+    sanitized_text = re.sub(r'\*(.*?)\*', r'\1', sanitized_text)  # Italics (if any)
+    sanitized_text = re.sub(r'#\s*(.*)', r'\1', sanitized_text)  # Headings (Remove #)
+    sanitized_text = re.sub(r'\[(.*?)\]\(.*?\)', r'\1', sanitized_text)  # Links (Keep link text only)
+
     # Remove unwanted characters and symbols (e.g., *, #, \n, [], etc.)
-    sanitized_text = re.sub(r'[*#\[\]\*\n]', ' ', text)
-    # Remove common punctuation that might not be wanted
-    sanitized_text = re.sub(r'[^\w\s,.-]', '', sanitized_text)  # Keep alphanumeric, spaces, commas, periods, hyphens
+    sanitized_text = re.sub(r'[*#\[\]\*\n]', ' ', sanitized_text)
+    
+    # Keep alphanumeric characters, spaces, commas, periods, and hyphens
+    sanitized_text = re.sub(r'[^\w\s,.-]', '', sanitized_text)
+    
     # Replace multiple spaces with a single space
     sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
+    
     return sanitized_text
 
 # Button to generate response and video
