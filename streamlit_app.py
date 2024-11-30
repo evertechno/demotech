@@ -37,9 +37,11 @@ image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "pn
 
 # Function to sanitize content by removing unwanted symbols
 def sanitize_text_for_tts(text):
-    # Remove unwanted characters (e.g., asterisks, brackets, etc.)
+    # Remove unwanted characters and symbols (e.g., *, #, \n, [], etc.)
     sanitized_text = re.sub(r'[*#\[\]\*\n]', ' ', text)
-    # Optionally, remove extra spaces between words
+    # Remove common punctuation that might not be wanted
+    sanitized_text = re.sub(r'[^\w\s,.-]', '', sanitized_text)  # Keep alphanumeric, spaces, commas, periods, hyphens
+    # Replace multiple spaces with a single space
     sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
     return sanitized_text
 
