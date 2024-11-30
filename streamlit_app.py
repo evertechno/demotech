@@ -9,6 +9,7 @@ from moviepy.editor import *  # MoviePy for video editing
 from reportlab.lib.pagesizes import letter
 from reportlab.pdfgen import canvas  # Built-in for PDF generation
 import time
+import re
 
 # Configure the API key securely from Streamlit's secrets
 genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
@@ -34,6 +35,14 @@ video_duration_per_image = st.slider("Set Video Duration Per Image (seconds)", m
 # File uploader for product images (multiple files allowed)
 image_files = st.file_uploader("Upload Product Images", type=["jpg", "jpeg", "png"], accept_multiple_files=True)
 
+# Function to sanitize content by removing unwanted symbols
+def sanitize_text_for_tts(text):
+    # Remove unwanted characters (e.g., asterisks, brackets, etc.)
+    sanitized_text = re.sub(r'[*\[\]\*\n]', ' ', text)
+    # Optionally, remove extra spaces between words
+    sanitized_text = re.sub(r'\s+', ' ', sanitized_text).strip()
+    return sanitized_text
+
 # Button to generate response and video
 if st.button("Generate Sales Proposal and Video"):
     try:
@@ -51,21 +60,21 @@ if st.button("Generate Sales Proposal and Video"):
         if call_to_action:
             ai_content += f"\n\nCall to Action:\n{call_to_action}"
 
-        # Step 3: Sanitize the generated content to remove unwanted characters like '**' or other symbols
-        ai_content = ai_content.replace("**", "").replace("]", "").replace("[", "")  # Removing common unwanted characters
-        
+        # Sanitize the content to remove unwanted symbols
+        ai_content_sanitized = sanitize_text_for_tts(ai_content)
+
         # Allow user to modify the AI-generated content
         editable_content = st.text_area("Edit Generated Proposal", ai_content, height=200)
 
         # Use the editable content if modified
         ai_content = editable_content.strip() if editable_content.strip() else ai_content
 
-        # Step 4: Generate text-to-speech from AI content
-        tts = gTTS(text=ai_content, lang='en')
+        # Step 3: Generate text-to-speech from the sanitized AI content
+        tts = gTTS(text=ai_content_sanitized, lang='en')
         audio_file = tempfile.NamedTemporaryFile(delete=False, suffix=".mp3")
         tts.save(audio_file.name)
 
-        # Step 5: Create a video from uploaded images
+        # Step 4: Create a video from uploaded images
         if image_files:
             image_clips = []
             for image_file in image_files:
@@ -91,7 +100,7 @@ if st.button("Generate Sales Proposal and Video"):
             st.error("Please upload at least one image for the slideshow.")
             video = None
 
-        # Step 6: Combine the video with the generated audio (text-to-speech)
+        # Step 5: Combine the video with the generated audio (text-to-speech)
         if video is not None:
             # Load audio file (text-to-speech) and set its duration to match the video
             audio_clip = AudioFileClip(audio_file.name)
@@ -109,7 +118,7 @@ if st.button("Generate Sales Proposal and Video"):
                 mime="video/mp4",
             )
 
-        # Step 7: Generate PDF from the AI-generated content (for Sales Proposal)
+        # Step 6: Generate PDF from the AI-generated content (for Sales Proposal)
         pdf_file = tempfile.NamedTemporaryFile(delete=False, suffix=".pdf")
         c = canvas.Canvas(pdf_file.name, pagesize=letter)
         c.setFont("Helvetica", 12)
@@ -130,7 +139,7 @@ if st.button("Generate Sales Proposal and Video"):
             mime="application/pdf",
         )
 
-        # Step 8: Email Option (using mailto)
+        # Step 7: Email Option (using mailto)
         email_recipient = st.text_input("Enter recipient email address:")
         if email_recipient:
             email_body = f"Please find attached the generated sales proposal. You can download it here: [Download PDF](sandbox:/files/{pdf_file.name})"
