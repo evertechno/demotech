@@ -18,6 +18,18 @@ genai.configure(api_key=st.secrets["GOOGLE_API_KEY"])
 st.title("AI-Generated Sales Proposal/Demo Video")
 st.write("Provide some basic information about your product to generate a sales proposal and demo video.")
 
+# Add custom CSS to hide the header and the top-right buttons
+hide_streamlit_style = """
+    <style>
+        .css-1r6p8d1 {display: none;} /* Hides the Streamlit logo in the top left */
+        .css-1v3t3fg {display: none;} /* Hides the star button */
+        .css-1r6p8d1 .st-ae {display: none;} /* Hides the Streamlit logo */
+        header {visibility: hidden;} /* Hides the header */
+        .css-1tqja98 {visibility: hidden;} /* Hides the header bar */
+    </style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
+
 # Step 1: Get inputs from the user for the Sales Proposal
 user_name = st.text_input("Your Name")
 company_name = st.text_input("Your Company Name")
