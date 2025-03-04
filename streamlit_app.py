@@ -89,7 +89,7 @@ if st.button("Generate Sales Proposal and Video"):
             image_clips = []
             for image_file in image_files:
                 img = Image.open(image_file)
-                img = img.resize((640, 360))  # Resize to smaller size for faster processing
+                img = img.resize((640, 360), Image.LANCZOS)  # Resize to smaller size for faster processing
                 img_array = np.array(img)
 
                 # Check if the image is grayscale (2D) or color (3D)
